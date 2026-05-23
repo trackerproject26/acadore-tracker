@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabase';
 import {
   Plus, X, Search, Clock, CheckCircle2, AlertCircle,
@@ -47,7 +48,7 @@ const isSoon = (d, s) => s !== 'done' && dleft(d) !== null && dleft(d) >= 0 && d
 const today  = () => new Date().toISOString().split('T')[0];
 
 // ── Root ──────────────────────────────────────────────────────
-export default function Home() {
+export default function Home({ session }) {
   const [projects, setProjects] = useState([]);
   const [tasks,    setTasks]    = useState([]);
   const [members,  setMembers]  = useState([]);
@@ -60,6 +61,14 @@ export default function Home() {
   const [modal,    setModal]    = useState(null);
   const [notif,    setNotif]    = useState(null);
   const [collapsed,setCollapsed]= useState(false);
+  const router = useRouter();
+
+  // Auth guard
+  useEffect(() => {
+    if (typeof session !== 'undefined' && !session) {
+      router.push('/login');
+    }
+  }, [session]);
 
   // ── Load initial data ──────────────────────────────────────
   useEffect(() => {
@@ -233,12 +242,21 @@ export default function Home() {
           {!collapsed && members[0] && (
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <Av m={members[0]} size={28}/>
-              <div><div style={{ fontSize:12, fontWeight:500, color:T.txt }}>{members[0].name}</div><div style={{ fontSize:10, color:T.txt3 }}>{members[0].role}</div></div>
+              <div><div style={{ fontSize:12, fontWeight:500, color:T.txt }}>{session?.user?.user_metadata?.full_name||members[0].name}</div><div style={{ fontSize:10, color:T.txt3 }}>{members[0].role}</div></div>
             </div>
           )}
-          <button onClick={()=>setCollapsed(!collapsed)} style={ghostBtn} onMouseEnter={e=>e.currentTarget.style.color=T.primary} onMouseLeave={e=>e.currentTarget.style.color=T.txt3}>
-            <ChevronDown size={14} style={{ transform:collapsed?'rotate(-90deg)':'rotate(90deg)', transition:'transform .2s' }}/>
-          </button>
+          <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+            {!collapsed && (
+              <button onClick={()=>supabase.auth.signOut()} style={{...ghostBtn, fontSize:11, color:T.txt3}}
+                onMouseEnter={e=>e.currentTarget.style.color=T.red}
+                onMouseLeave={e=>e.currentTarget.style.color=T.txt3}>
+                Sign out
+              </button>
+            )}
+            <button onClick={()=>setCollapsed(!collapsed)} style={ghostBtn} onMouseEnter={e=>e.currentTarget.style.color=T.primary} onMouseLeave={e=>e.currentTarget.style.color=T.txt3}>
+              <ChevronDown size={14} style={{ transform:collapsed?'rotate(-90deg)':'rotate(90deg)', transition:'transform .2s' }}/>
+            </button>
+          </div>
         </div>
       </aside>
 
